@@ -14,7 +14,7 @@ from sklearn.linear_model import ElasticNet
 
 import mlflow
 import mlflow.sklearn
-
+from mlflow.models import infer_signature
 
 def eval_metrics(actual, pred):
     rmse = np.sqrt(mean_squared_error(actual, pred))
@@ -64,3 +64,12 @@ if __name__ == "__main__":
         mlflow.log_metric("mae", mae)
 
         mlflow.sklearn.log_model(lr, "model")
+        signature = infer_signature(test_x, predicted_qualities)
+        input_example = test_x.iloc[:5]
+
+        mlflow.sklearn.log_model(
+            lr,
+            artifact_path="model",
+            signature=signature,
+            input_example=input_example,
+        )

@@ -1,46 +1,53 @@
 name: CI MLflow
- 
+
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
   pull_request:
-    branches:
-      - master
- 
+    branches: [ master ]
+
 env:
-  CSV_URL: "Project/wine-quality.csv"
-  TARGET_VAR: "quality"
-  ALPHA: 0.5
-  L1_RATIO: 0.5
-  RANDOM_STATE: 42
- 
+  ALPHA: "0.5"
+  L1_RATIO: "0.5"
+
 jobs:
   build:
     runs-on: ubuntu-latest
- 
+
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE
-      - uses: actions/checkout@v3
- 
-      # Setup Python 3.12.7
+      - uses: actions/checkout@v4
+
       - name: Set up Python 3.12.7
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12.7"
-      
-      # Check Env Variables
-      - name: Check Env
+          cache: "pip"
+
+      # Debug: pastikan folder Project/ ada dan ada MLproject di dalamnya
+      - name: Show tree
         run: |
-          echo $CSV_URL
- 
-      # Install mlflow
+          pwd
+          ls -la
+          echo "--- Project/ ---"
+          ls -la Project || true
+          test -f Project/MLproject || (echo "ERROR: Project/MLproject tidak ditemukan" && exit 1)
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mlflow
-      
-      # Run as a mlflow project
-      - name: Run mlflow project
+          pip install mlflow==2.18.0
+          # Jika kamu punya requirements.txt di Project/, install di sini:
+          if [ -f Project/requirements.txt ]; then pip install -r Project/requirements.txt; fi
+          # Kalau tidak ada requirements.txt, install paket yang kamu butuh (contoh):
+          pip install scikit-learn pandas numpy
+
+      # Opsi 1: jalankan dari root dengan path relatif
+      - name: Run mlflow project (relative path)
         run: |
-          mlflow run Project --env-manager=local 
+          mlflow run ./Project --env-manager=local -P alpha=${ALPHA} -P l1_ratio=${L1_RATIO}
+
+      # Opsi 2 (alternatif, salah satu saja): ubah working directory jadi Project/
+      # - name: Run mlflow project (working-directory)
+      #   working-directory: Project
+      #   run: |
+      #     mlflow run . --env-manager=local -P alpha=${ALPHA} -P l1_ratio=${L1_RATIO}
